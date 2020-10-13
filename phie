@@ -1,0 +1,42 @@
+# import required packages and libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import las
+
+#%% Data Loading
+well = las.LASReader('data/42706403440000.LAS').data
+
+# load the well data into one DataFrame and replace null numbers with NaN
+well = pd.DataFrame(well).replace(-999.25, np.nan)
+
+# preview dataframe
+well.head()
+
+# show only the required logs
+well_refined = well[['DEPT', 'NPHI', 'GR', 'PHID_SS', 'SP']]
+well_refined.head()
+
+# calculate the shale volume
+well_refined["VSHALE"] = (well_refined.GR - np.min(well_refined.GR)) / (np.max(well_refined.GR) - np.min(well_refined.GR))
+well_refined.head()
+
+# calculate the total porosity
+well_refined['PHIT'] = np.sqrt(((((well_refined.NPHI)*(well_refined.NPHI)+(well_refined.PHID_SS)*(well_refined.PHID_SS))))/2)
+well_refined.tail()
+
+# calculate effective porosity
+well_refined['PHIE'] = well_refined.PHIT*(1-well_refined.VSHALE)
+well_refined = well_refined[well_refined['PHIE'] !=0]
+well_refined['PHIE'] = well_refined['PHIE'].abs() 
+well_refined.tail()
+
+# display the log for preview
+plt.figure(figsize=(5,10))
+plt.subplot(122)
+plt.title('PHIE')
+plt.plot('PHIE', 'DEPT', data=well_refined)
+plt.gca().invert_yaxis()
+
+# export file in csv
+well_refined.to_csv(r'C:\Users\melom\OneDrive\Desktop\Files\THESIS\Well Logs\Complete\42706302210000.csv', index = False)
